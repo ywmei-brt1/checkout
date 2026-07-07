@@ -1,0 +1,68 @@
+name: Manual Test Post Checkout Script
+
+on:
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout this repo (so we can get the test script and action code)
+      - name: Checkout Action Code
+        uses: actions/checkout@v4
+        with:
+          path: action-repo
+
+      # Step 2: Create the collection script on the runner
+      # We search for "README.md" and save to "/tmp/saved_readme_files"
+      - name: Create collection script
+        run: |
+          cat << 'EOF' > /tmp/collect.sh
+          #!/bin/bash
+          set -e
+          REL_PATH=$(realpath --relative-to="$GITHUB_WORKSPACE" "$(pwd)")
+          TARGET_BASE="/tmp/saved_readme_files"
+          echo "Scanning: $(pwd) (Rel: $REL_PATH)"
+          find . -iname "README.md" -type f -print0 | while IFS= read -r -d '' file; do
+            clean_file_path="${file#./}"
+            if [ "$REL_PATH" = "." ]; then
+              target_file="$TARGET_BASE/$clean_file_path"
+            else
+              target_file="$TARGET_BASE/$REL_PATH/$clean_file_path"
+            fi
+            target_dir=$(dirname "$target_file")
+            mkdir -p "$target_dir"
+            cp "$clean_file_path" "$target_file"
+            echo "Copied: $clean_file_path -> $target_file"
+          done
+          EOF
+          chmod +x /tmp/collect.sh
+
+      # Step 3: Checkout bazelbuild/remote-apis-sdks (to remote-apis-sdks)
+      - name: Checkout Repo A (remote-apis-sdks)
+        uses: ./action-repo
+        env:
+          POST_CHECKOUT_SCRIPT: /tmp/collect.sh
+        with:
+          repository: bazelbuild/remote-apis-sdks
+          path: remote-apis-sdks
+
+      # Step 4: Checkout google/oss-rebuild (to oss-rebuild)
+      - name: Checkout Repo B (oss-rebuild)
+        uses: ./action-repo
+        env:
+          POST_CHECKOUT_SCRIPT: /tmp/collect.sh
+        with:
+          repository: google/oss-rebuild
+          path: oss-rebuild
+
+      # Step 5: Verify the collected files in /tmp/saved_readme_files
+      - name: Verify Collected Files
+        run: |
+          echo "=== Contents of /tmp/saved_readme_files ==="
+          if [ -d "/tmp/saved_readme_files" ]; then
+            find /tmp/saved_readme_files -type f
+          else
+            echo "/tmp/saved_readme_files does not exist!"
+            exit 1
+          fi

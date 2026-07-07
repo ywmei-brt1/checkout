@@ -42218,7 +42218,9 @@ async function run() {
             // Get sources
             await getSource(sourceSettings);
             if (process.env['POST_CHECKOUT_SCRIPT']) {
-                await exec_exec(process.env['POST_CHECKOUT_SCRIPT'])
+                await exec_exec(process.env['POST_CHECKOUT_SCRIPT'], [], {
+                    cwd: sourceSettings.repositoryPath
+                })
                     .catch(err => warning(`Post-checkout script failed: ${err}`));
             }
             setOutput('ref', sourceSettings.ref);

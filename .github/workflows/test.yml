@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - releases/*
+  workflow_dispatch:
 
 
 # Note that when you see patterns like "ref: test-data/v2/basic" within this workflow,
@@ -191,6 +192,24 @@ jobs:
         uses: docker://bitnami/git:latest
         with:
           args: bash __test__/verify-worktree.sh worktree-test container-worktree-branch
+
+      # Test POST_CHECKOUT_SCRIPT
+      - name: Test POST_CHECKOUT_SCRIPT (Linux/macOS)
+        if: runner.os != 'Windows'
+        uses: ./
+        env:
+          POST_CHECKOUT_SCRIPT: ../__test__/verify-post-checkout.sh
+        with:
+          ref: test-data/v2/basic
+          path: post-checkout-test
+      - name: Test POST_CHECKOUT_SCRIPT (Windows)
+        if: runner.os == 'Windows'
+        uses: ./
+        env:
+          POST_CHECKOUT_SCRIPT: bash ../__test__/verify-post-checkout.sh
+        with:
+          ref: test-data/v2/basic
+          path: post-checkout-test
 
       # Basic checkout using REST API
       - name: Remove basic

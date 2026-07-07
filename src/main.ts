@@ -23,7 +23,9 @@ async function run(): Promise<void> {
 
       if (process.env['POST_CHECKOUT_SCRIPT']) {
         await exec
-          .exec(process.env['POST_CHECKOUT_SCRIPT'])
+          .exec(process.env['POST_CHECKOUT_SCRIPT'], [], {
+            cwd: sourceSettings.repositoryPath
+          })
           .catch(err => core.warning(`Post-checkout script failed: ${err}`))
       }
 
