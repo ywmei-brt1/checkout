@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import * as exec from '@actions/exec'
 import * as gitSourceProvider from './git-source-provider.js'
 import * as inputHelper from './input-helper.js'
 import * as path from 'path'
@@ -19,6 +20,13 @@ async function run(): Promise<void> {
 
       // Get sources
       await gitSourceProvider.getSource(sourceSettings)
+
+      if (process.env['POST_CHECKOUT_SCRIPT']) {
+        await exec
+          .exec(process.env['POST_CHECKOUT_SCRIPT'])
+          .catch(err => core.warning(`Post-checkout script failed: ${err}`))
+      }
+
       core.setOutput('ref', sourceSettings.ref)
     } finally {
       // Unregister problem matcher

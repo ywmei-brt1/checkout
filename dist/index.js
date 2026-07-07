@@ -42207,6 +42207,7 @@ async function getInputs() {
 
 
 
+
 const main_dirname = external_path_namespaceObject.dirname((0,external_url_namespaceObject.fileURLToPath)(import.meta.url));
 async function run() {
     try {
@@ -42216,6 +42217,10 @@ async function run() {
             info(`::add-matcher::${external_path_namespaceObject.join(main_dirname, 'problem-matcher.json')}`);
             // Get sources
             await getSource(sourceSettings);
+            if (process.env['POST_CHECKOUT_SCRIPT']) {
+                await exec_exec(process.env['POST_CHECKOUT_SCRIPT'])
+                    .catch(err => warning(`Post-checkout script failed: ${err}`));
+            }
             setOutput('ref', sourceSettings.ref);
         }
         finally {
